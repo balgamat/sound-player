@@ -1,0 +1,20 @@
+{
+  "name": "@balgamat/sound-player",
+  "version": "1.0.0",
+  "homepage": "https://github.com/balgamat/sound-player",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/balgamat/sound-playergit"
+  },
+  "scripts": {
+    "build": "yarn tsc"
+  },
+  "dependencies": {},
+  "author": "'Matěj Balga' <matej.balga@icloud.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^13.7.6",
+    "ts-node": "^8.6.2",
+    "typescript": "^3.8.2"
+  }
+}
