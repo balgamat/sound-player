@@ -1,17 +1,25 @@
 {
   "name": "@balgamat/sound-player",
   "version": "1.0.0",
+  "engines": {
+    "node": "^10.18.0"
+  },
   "homepage": "https://github.com/balgamat/sound-player",
   "repository": {
     "type": "git",
-    "url": "git://github.com/balgamat/sound-playergit"
+    "url": "git://github.com/balgamat/sound-player.git"
   },
   "scripts": {
-    "build": "yarn tsc"
+    "build": "tsc",
+    "example": "ts-node example.ts"
   },
-  "dependencies": {},
+  "license": "GPL-3.0",
+  "dependencies": {
+    "lame": "^1.2.4",
+    "pcm-volume": "^1.0.0",
+    "speaker": "^0.5.1"
+  },
   "author": "'Matěj Balga' <matej.balga@icloud.com>",
-  "license": "MIT",
   "devDependencies": {
     "@types/node": "^13.7.6",
     "ts-node": "^8.6.2",
