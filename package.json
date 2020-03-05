@@ -11,7 +11,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "example": "ts-node example.ts"
+    "example": "node example.js"
   },
   "license": "GPL-3.0",
   "dependencies": {

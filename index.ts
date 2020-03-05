@@ -3,7 +3,7 @@ import * as fs from "fs";
 // @ts-ignore
 import { Decoder, STEREO } from "lame";
 const Speaker = require("speaker");
-const volume = require("pcm-volume");
+const volumeControl = require("pcm-volume");
 
 class SoundPlayer {
   public readonly device?: ISoundDevice | null;
@@ -34,7 +34,7 @@ class SoundPlayer {
       outSampleRate: 22050,
       mode: STEREO
     });
-    this._volume = new volume();
+    this._volume = new volumeControl();
   }
 
   static getDevices() {
@@ -60,23 +60,38 @@ class SoundPlayer {
   }
 
   play({ filename, volume = 100 }: IPlay) {
+    this._speaker = new Speaker({
+      // @ts-ignore
+      device: this.device?.address || null
+    });
+    this._decoder = new Decoder({
+      channels: 2,
+      bitDepth: 16,
+      sampleRate: 44100,
+      bitRate: 128,
+      outSampleRate: 22050,
+      mode: STEREO
+    });
+    // @ts-ignore
+    this._volume = new volumeControl();
+
     try {
-      this._volume.pipe(this._speaker);
-      this._decoder.pipe(this._volume);
       const fileStream = fs.createReadStream(filename);
+      this._decoder.pipe(this._volume);
+      this._volume.pipe(this._speaker);
       fileStream.pipe(this._decoder);
-      this._decoder.on("end", () => {
+      this._speaker.on("flush", () => {
         console.log(`${filename} ended.`);
         this._speaker.close();
       });
+      this.volume = volume;
     } catch {}
+  }
 
-    /*setInterval(() => {
-      if (this.volume < 100) {
-        this.volume+=1;
-        console.log(this.volume);
-      }
-    }, 100);*/
+  stop() {
+    try {
+      this._speaker.close();
+    } catch {}
   }
 
   public get volume() {

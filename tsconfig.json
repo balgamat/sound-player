@@ -10,6 +10,6 @@
     "strict": true,
     "esModuleInterop": true
   },
-  "include": ["./index.ts", "example.ts"],
+  "include": ["./index.ts"],
   "exclude": ["node_modules"]
 }

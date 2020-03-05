@@ -2,4 +2,7 @@ node_modules
 node_modules/*
 npm_debug.log
 .idea/
-*.js
+index.js
+index.d.ts
+index.js.map
+build/
