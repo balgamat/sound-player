@@ -1,6 +1,6 @@
 {
   "name": "node-sound-player",
-  "version": "1.0.4",
+  "version": "1.1.5",
   "engines": {
     "node": "^10.18.0"
   },
@@ -17,6 +17,7 @@
   "license": "GPL-3.0",
   "dependencies": {
     "lame": "^1.2.4",
+    "naudiodon": "^2.1.2",
     "pcm-volume": "^1.0.0",
     "speaker": "^0.5.1"
   },

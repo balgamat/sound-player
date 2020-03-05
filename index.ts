@@ -4,6 +4,7 @@ import * as fs from "fs";
 import { Decoder, STEREO } from "lame";
 const Speaker = require("speaker");
 const volumeControl = require("pcm-volume");
+const portAudio = require("naudiodon");
 
 process.on("unhandledRejection", () => {});
 process.on("warning", () => {});
@@ -45,24 +46,9 @@ class SoundPlayer {
 
   static getDevices() {
     try {
-      if (process.platform === "linux")
-        return execSync("cat /proc/asound/pcm")
-          .toString()
-          .split("\n")
-          .reduce((acc: ISoundDevice[], line: string) => {
-            const [rawAddress, name] = line.split(": ");
-            const addr =
-              rawAddress &&
-              rawAddress
-                .split("-")
-                .map(i => parseInt(i))
-                .join(",");
-            return addr
-              ? [...acc, { id: `hw:${addr}`, name: `${name} [${addr}]` }]
-              : acc;
-          }, []);
-
-      return [];
+      return portAudio.getDevices()
+        .filter((d: any) => d.maxOutputChannels > 0)
+        .map((d: any) => ({ id: d.id, name: d.name }));
     } catch {
       return [];
     }
