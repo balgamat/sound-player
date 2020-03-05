@@ -2,65 +2,55 @@ import { execSync } from "child_process";
 import * as fs from "fs";
 // @ts-ignore
 import { Decoder, STEREO } from "lame";
-import { ReadStream } from "fs";
-const Speaker = require("speaker");
+const portAudio = require('naudiodon');
 const volumeControl = require("pcm-volume");
 
 process.on('unhandledRejection', () => {});
 
 class SoundPlayer {
-  public readonly device?: ISoundDevice | null;
+  public readonly device?: number;
   private _volume: any;
   private _volumeValue: number = 100;
   private _speaker: any;
   private _decoder: Decoder;
-  private _file?: ReadStream;
+  private _file?: fs.ReadStream;
   private readonly onClose: () => void;
   private readonly onError: () => void;
 
   constructor({
-    device = null,
+    device = -1,
     onClose = () => {},
     onError = () => {}
   }: ISoundPlayer = {}) {
     this.device = device;
     this.onClose = onClose;
     this.onError = onError;
-    this._speaker = new Speaker({
-      // @ts-ignore
-      device: device?.address
+    this.createOutput();
+  }
+
+  createOutput() {
+    this._speaker = new portAudio.AudioIO({
+      outOptions: {
+        channelCount: 2,
+        sampleFormat: portAudio.SampleFormat16Bit,
+        sampleRate: 48000,
+        deviceId: this.device, // Use -1 or omit the deviceId to select the default device
+        closeOnError: false // Close the stream if an audio error is detected, if set false then just log the error
+      }
     });
     this._decoder = new Decoder({
       channels: 2,
       bitDepth: 16,
       sampleRate: 44100,
-      bitRate: 128,
-      outSampleRate: 22050,
+      bitRate: 256,
+      outSampleRate: 48000,
       mode: STEREO
     });
     this._volume = new volumeControl();
   }
 
   static getDevices() {
-    try {
-      return execSync("cat /proc/asound/pcm")
-        .toString()
-        .split("\n")
-        .reduce((acc: ISoundDevice[], line: string) => {
-          const [rawAddress, name] = line.split(": ");
-          const addr =
-            rawAddress &&
-            rawAddress
-              .split("-")
-              .map(i => parseInt(i))
-              .join(",");
-          return addr
-            ? [...acc, { address: `hw:${addr}`, name: `${name} [${addr}]` }]
-            : acc;
-        }, []);
-    } catch {
-      return [];
-    }
+    return portAudio.getDevices();
   }
 
   play({ filename, volume = 100 }: IPlay) {
@@ -69,40 +59,22 @@ class SoundPlayer {
     } catch {}
 
     try {
-      this._speaker.close();
-      this._speaker = new Speaker({
-        // @ts-ignore
-        device: this.device?.address || null
-      });
-      this._decoder = new Decoder({
-        channels: 2,
-        bitDepth: 16,
-        sampleRate: 44100,
-        bitRate: 128,
-        outSampleRate: 22050,
-        mode: STEREO
-      });
+      this.createOutput();
       // @ts-ignore
-      this._volume = new volumeControl();
       this._file = fs.createReadStream(filename);
-      this._decoder.pipe(this._volume);
       this._volume.pipe(this._speaker);
+      this._decoder.pipe(this._volume);
       this._file.pipe(this._decoder);
       this.volume = volume;
-
-      this._speaker.on("flush", () => {
-        console.log(`${filename} ended.`);
-        this._speaker.close();
-      });
+      this._speaker.start();
     } catch {}
   }
 
   stop() {
     try {
-      this._file?.destroy();
-      this._decoder.destroy();
-      this._volume.destroy();
-      this._speaker.destroy();
+      this.volume = 0;
+      this._speaker.cork();
+      this._speaker.quit();
     } catch {}
   }
 
@@ -123,13 +95,8 @@ export interface IPlay {
   volume?: number;
 }
 
-export interface ISoundDevice {
-  address: string;
-  name: string;
-}
-
 export interface ISoundPlayer {
-  device?: ISoundDevice | null;
+  device?: number;
   onClose?: () => void;
   onError?: (data?: any) => void;
 }
