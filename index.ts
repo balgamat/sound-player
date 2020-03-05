@@ -65,8 +65,6 @@ class SoundPlayer {
         });
         pcmStream.pipe(output);
 
-        setTimeout(() => { pcmStream.unpipe(output); }, 1000);
-
         resolve(output);
       });
     });
@@ -79,7 +77,9 @@ class SoundPlayer {
   };
 
   static getDevices() {
-    return portAudio.getDevices();
+    return portAudio.getDevices()
+      .filter((d: any) => d.maxOutputChannels > 0)
+      .map((d: any) => ({ id: d.id, name: d.name }));
   }
 
   stop = ({ channel = 0 }: { channel: number }) => {
