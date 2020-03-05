@@ -9,5 +9,6 @@ const channels = filenames.map(f => {
   return channel;
 });
 
-setTimeout(() => channels[0].play({ filename: filenames[0], volume: 10 }), 10000);
+setTimeout(() => channels[0].play({ filename: filenames[0], volume: 10 }), 5000);
+setTimeout(() => channels[0].play({ filename: filenames[0], volume: 100}), 11000);
 

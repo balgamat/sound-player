@@ -2,8 +2,11 @@ import { execSync } from "child_process";
 import * as fs from "fs";
 // @ts-ignore
 import { Decoder, STEREO } from "lame";
+import { ReadStream } from "fs";
 const Speaker = require("speaker");
 const volumeControl = require("pcm-volume");
+
+process.on('unhandledRejection', () => {});
 
 class SoundPlayer {
   public readonly device?: ISoundDevice | null;
@@ -11,6 +14,7 @@ class SoundPlayer {
   private _volumeValue: number = 100;
   private _speaker: any;
   private _decoder: Decoder;
+  private _file?: ReadStream;
   private readonly onClose: () => void;
   private readonly onError: () => void;
 
@@ -60,37 +64,45 @@ class SoundPlayer {
   }
 
   play({ filename, volume = 100 }: IPlay) {
-    this._speaker = new Speaker({
-      // @ts-ignore
-      device: this.device?.address || null
-    });
-    this._decoder = new Decoder({
-      channels: 2,
-      bitDepth: 16,
-      sampleRate: 44100,
-      bitRate: 128,
-      outSampleRate: 22050,
-      mode: STEREO
-    });
-    // @ts-ignore
-    this._volume = new volumeControl();
+    try {
+      this.stop();
+    } catch {}
 
     try {
-      const fileStream = fs.createReadStream(filename);
+      this._speaker.close();
+      this._speaker = new Speaker({
+        // @ts-ignore
+        device: this.device?.address || null
+      });
+      this._decoder = new Decoder({
+        channels: 2,
+        bitDepth: 16,
+        sampleRate: 44100,
+        bitRate: 128,
+        outSampleRate: 22050,
+        mode: STEREO
+      });
+      // @ts-ignore
+      this._volume = new volumeControl();
+      this._file = fs.createReadStream(filename);
       this._decoder.pipe(this._volume);
       this._volume.pipe(this._speaker);
-      fileStream.pipe(this._decoder);
+      this._file.pipe(this._decoder);
+      this.volume = volume;
+
       this._speaker.on("flush", () => {
         console.log(`${filename} ended.`);
         this._speaker.close();
       });
-      this.volume = volume;
     } catch {}
   }
 
   stop() {
     try {
-      this._speaker.close();
+      this._file?.destroy();
+      this._decoder.destroy();
+      this._volume.destroy();
+      this._speaker.destroy();
     } catch {}
   }
 
