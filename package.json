@@ -1,6 +1,6 @@
 {
-  "name": "@balgamat/sound-player",
-  "version": "1.0.0",
+  "name": "node-sound-player",
+  "version": "1.0.3",
   "engines": {
     "node": "^10.18.0"
   },
@@ -9,6 +9,7 @@
     "type": "git",
     "url": "git://github.com/balgamat/sound-player.git"
   },
+  "main": "index.js",
   "scripts": {
     "build": "tsc",
     "example": "node example.js"
