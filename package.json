@@ -15,6 +15,7 @@
   },
   "license": "GPL-3.0",
   "dependencies": {
+    "audio-mixer": "^2.1.4",
     "lame": "^1.2.4",
     "naudiodon": "^2.1.2",
     "pcm-volume": "^1.0.0"

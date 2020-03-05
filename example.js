@@ -3,13 +3,14 @@ const { SoundPlayer } = require("./index.js");
 const filenames = process.argv.slice(2);
 let a = true;
 
-const channels = filenames.map(f => {
-  const channel = new SoundPlayer({onClose: () => {console.log('Ended')}});
-  channel.play({ filename: f });
-  return channel;
+const sp =  new SoundPlayer({});
+
+const channels = filenames.map((f, i) => {
+  sp.play({ filename: f, ch: i.toString() });
 });
 
-//setInterval(() => channels[0].volume -= 1, 100);
-setTimeout(() => channels[0].play({ filename: filenames[0], volume: 10 }), 2000);
-setTimeout(() => channels[0].play({ filename: filenames[0], volume: 100}), 4000);
+
+setTimeout(() => sp.stop(1), 1000);
+setTimeout(() => sp.stop(0), 3000);
+setTimeout(() => sp.play({ filename: filenames[0], volume: 100, channel: 0}), 4000);
 
