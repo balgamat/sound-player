@@ -12,7 +12,7 @@ class SoundPlayer {
   private readonly onError: () => void;
   private readonly _speaker: any;
   private _mixer: any;
-  private _channels: Record<number, Channel> = {};
+  private _channels: any = {};
 
   constructor({
     device = -1,
@@ -25,7 +25,9 @@ class SoundPlayer {
     this._mixer = new Mixer({
       channels: 2,
       bitDepth: 16,
-      sampleRate: 44100
+      sampleRate: 44100,
+      // @ts-ignore
+      clearInterval: 100
     });
     this._speaker = new portAudio.AudioIO({
       outOptions: {
@@ -40,63 +42,59 @@ class SoundPlayer {
     this._speaker.start();
   }
 
-  private createChannel = ({
-    volume,
-    filename
-  }: Pick<IPlay, "volume" | "filename">) =>
-    new Promise<Channel>((resolve, reject) => {
-      const decoder = new Decoder({
-        channels: 2,
-        bitDepth: 16,
-        sampleRate: 44100,
-        bitRate: 256,
-        outSampleRate: 44100,
-        mode: STEREO
-      });
-      const file = fs.createReadStream(filename);
-      const pcmStream = file.pipe(decoder);
-
-      decoder.on("format", (f: any) => {
-        const output = new Channel({
-          volume,
-          sampleRate: f.sampleRate,
-          channels: f.channels,
-          bitDepth: f.bitDepth
-        });
-        pcmStream.pipe(output);
-
-        resolve(output);
-      });
+  private createChannel = () => {
+    const decoder = new Decoder({
+      channels: 2,
+      bitDepth: 16,
+      sampleRate: 44100,
+      bitRate: 256,
+      outSampleRate: 44100,
+      mode: STEREO
     });
 
-  play = ({ filename, volume = 100, channel = 0 }: IPlay) => {
-    this.createChannel({ filename, volume }).then(c => {
-      this._mixer.addInput(c);
-      this._channels[channel] = c;
+    const output = new Channel({
+      volume: 100
     });
+
+    return [decoder, output];
+  };
+
+  play = ({ filename, volume = 100, channel = 0, loop = false }: IPlay) => {
+    const [i, o] = this.createChannel();
+    const c = fs
+      .createReadStream(filename)
+      .pipe(i)
+      .pipe(o);
+    c.setVolume(volume);
+    c.on("unpipe", () => console.log("unpiped"));
+    this._mixer.addInput(c);
+    this._channels[channel] = { i, o };
   };
 
   static getDevices() {
-    return portAudio.getDevices()
+    return portAudio
+      .getDevices()
       .filter((d: any) => d.maxOutputChannels > 0)
       .map((d: any) => ({ id: d.id, name: d.name }));
   }
 
   stop = ({ channel = 0 }: { channel: number }) => {
     try {
-      console.log("Stopping...");
-      this._channels[channel].setVolume(0);
-      this._channels[channel].clear();
-      this._mixer.removeInput(this._channels[channel]);
+      console.log("Stopping...", this._mixer.inputs.length);
+      if (this._channels[channel]) {
+        // @ts-ignore
+        this._channels[channel].i.unpipe();
+        // @ts-ignore
+        this._channels[channel].o.end();
+        this._mixer.removeInput(this._channels[channel].o);
+      }
+      console.log("Stopped...", this._mixer.inputs.length);
     } catch (e) {
       console.log(e);
     }
   };
 
   close = () => {
-    Object.keys(this._channels).map(channel =>
-      this._channels[parseInt(channel)].end()
-    );
     this._speaker.quit();
   };
 }
@@ -107,6 +105,7 @@ export interface IPlay {
   filename: string;
   volume?: number;
   channel?: number;
+  loop?: boolean;
 }
 
 export interface IChannel {

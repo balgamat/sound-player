@@ -1,6 +1,6 @@
 {
   "name": "@balgamat/sound-player",
-  "version": "1.0.0",
+  "version": "3.0.0",
   "engines": {
     "node": "^10.18.0"
   },
