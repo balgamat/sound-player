@@ -1,4 +1,3 @@
-import { execSync } from "child_process";
 import * as fs from "fs";
 // @ts-ignore
 import { Decoder, STEREO } from "lame";
