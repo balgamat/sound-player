@@ -9,7 +9,7 @@ process.on("unhandledRejection", () => {});
 process.on("warning", () => {});
 
 class SoundPlayer {
-  public readonly device?: string | null;
+  public readonly device: ISoundDevice;
   private _volume: any;
   private _volumeValue: number = 100;
   private _speaker: any;
@@ -19,18 +19,18 @@ class SoundPlayer {
   private readonly onError: (e: any) => void;
 
   constructor({
-    device = null,
+    device = { id: null, name: "Default device" },
     onFinished = () => {},
-    onError = (_) => {}
+    onError = _ => {}
   }: ISoundPlayer = {}) {
     this.device = device;
     this.onFinished = onFinished;
     this.onError = onError;
     this._speaker = new Speaker({
       // @ts-ignore
-      device
+      device: this.device.id
     });
-    console.log(`Using device: ${device}`);
+    console.log(`Using device: ${device.name}`);
     this._fs = null;
     this._decoder = new Decoder({
       channels: 2,
@@ -45,21 +45,24 @@ class SoundPlayer {
 
   static getDevices() {
     try {
-      return execSync("cat /proc/asound/pcm")
-        .toString()
-        .split("\n")
-        .reduce((acc: ISoundDevice[], line: string) => {
-          const [rawAddress, name] = line.split(": ");
-          const addr =
-            rawAddress &&
-            rawAddress
-              .split("-")
-              .map(i => parseInt(i))
-              .join(",");
-          return addr
-            ? [...acc, { address: `hw:${addr}`, name: `${name} [${addr}]` }]
-            : acc;
-        }, []);
+      if (process.platform === "linux")
+        return execSync("cat /proc/asound/pcm")
+          .toString()
+          .split("\n")
+          .reduce((acc: ISoundDevice[], line: string) => {
+            const [rawAddress, name] = line.split(": ");
+            const addr =
+              rawAddress &&
+              rawAddress
+                .split("-")
+                .map(i => parseInt(i))
+                .join(",");
+            return addr
+              ? [...acc, { id: `hw:${addr}`, name: `${name} [${addr}]` }]
+              : acc;
+          }, []);
+
+      return [];
     } catch {
       return [];
     }
@@ -68,7 +71,9 @@ class SoundPlayer {
   play({ filename, volume = 100, loop = false }: IPlay) {
     try {
       this._speaker.close();
-    } catch (e) { this.onError(e) }
+    } catch (e) {
+      this.onError(e);
+    }
 
     try {
       this._speaker = new Speaker({
@@ -88,7 +93,7 @@ class SoundPlayer {
 
       const fileStream = fs.createReadStream(filename);
       fileStream.pipe(this._decoder);
-      this._decoder.on('format', (f: any) => {
+      this._decoder.on("format", (f: any) => {
         this._speaker = new Speaker({
           // @ts-ignore
           device: this.device?.address || null,
@@ -100,20 +105,24 @@ class SoundPlayer {
         this._speaker.on("flush", () => {
           this.onFinished();
           this._speaker.close();
-          !!loop && this.play({filename, volume, loop});
+          !!loop && this.play({ filename, volume, loop });
         });
         this.volume = volume;
 
         this._decoder.pipe(this._volume);
         this._volume.pipe(this._speaker);
       });
-    } catch (e) { this.onError(e) }
+    } catch (e) {
+      this.onError(e);
+    }
   }
 
   stop() {
     try {
       this._speaker.close();
-    } catch (e) { this.onError(e) }
+    } catch (e) {
+      this.onError(e);
+    }
   }
 
   public get volume() {
@@ -135,12 +144,12 @@ export interface IPlay {
 }
 
 export interface ISoundPlayer {
-  device?: string | null;
+  device?: ISoundDevice;
   onFinished?: () => void;
   onError?: (data?: any) => void;
 }
 
 export interface ISoundDevice {
-  address: string;
+  id: string | null;
   name: string;
 }
