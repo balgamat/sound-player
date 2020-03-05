@@ -78,7 +78,7 @@ class SoundPlayer {
     try {
       this._speaker = new Speaker({
         // @ts-ignore
-        device: this.device?.address || null
+        device: this.device?.id || null
       });
       this._decoder = new Decoder({
         channels: 2,
@@ -96,7 +96,7 @@ class SoundPlayer {
       this._decoder.on("format", (f: any) => {
         this._speaker = new Speaker({
           // @ts-ignore
-          device: this.device?.address || null,
+          device: this.device?.id || null,
           sampleRate: f.sampleRate,
           channels: f.channels,
           bitDepth: f.bitDepth

@@ -1,6 +1,6 @@
 {
   "name": "node-sound-player",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "engines": {
     "node": "^10.18.0"
   },
