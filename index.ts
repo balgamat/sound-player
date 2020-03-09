@@ -12,6 +12,7 @@ export interface ISoundDevice {
 export interface IPlayerParams {
   device?: ISoundDevice;
   noFrames?: boolean;
+  verbose?: boolean;
 }
 
 export class SoundPlayer extends EventEmitter {
@@ -28,12 +29,14 @@ export class SoundPlayer extends EventEmitter {
   public samples: any;
   public track: any;
 
-  constructor({ device, noFrames }: IPlayerParams = {}) {
+  constructor({ device, noFrames, verbose = false }: IPlayerParams = {}) {
     super();
 
     const args = ["-R"];
-    !!device && args.push("-a" + device.id);
-    console.log(args);
+    if (!!device) {
+      args.push("-a");
+      args.push(device.id);
+    }
 
     this.mpg123 = spawn("mpg123", args);
     this.controlStream = this.mpg123.stdin;
@@ -41,9 +44,8 @@ export class SoundPlayer extends EventEmitter {
 
     this.mpg123.stdout.pipe(es.split()).pipe(
       through((data: any) => {
-        console.log("data", data);
+        verbose && console.log("data", data);
         const line = data.split(" ").shift();
-        console.log("line", line);
         const type = line.split(" ").shift();
         switch (type) {
           case "@P":
